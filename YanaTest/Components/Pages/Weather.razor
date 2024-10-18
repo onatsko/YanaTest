@@ -1,0 +1,131 @@
+﻿@page "/weather"
+
+@using System.Globalization
+@using YanaTest.BL.Models
+@using YanaTest.BL.Services
+
+@inject ISnackbar Snackbar
+@inject IWeatherService _weatherService 
+
+<PageTitle>Прогноз погоди</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Прогноз погоди по м.Полтава</MudText>
+<MudGrid>
+    <MudItem xs="6" md="2">
+        <MudDatePicker
+            Date="_dateFrom"
+            DateChanged="@(args => OnDateFromChanged(args.Value))"
+            Label="Період з"
+            DateFormat="dd.MM.yyyy"
+            Culture="@(new CultureInfo("uk-UA"))" />
+    </MudItem>
+    <MudItem xs="6" md="2">
+        <MudDatePicker
+            Date="_dateTo"
+            DateChanged="@(args => OnDateToChanged(args.Value))"
+            Class="ml-4"
+            Label="по"
+            DateFormat="dd.MM.yyyy"
+            Culture="@(new CultureInfo("uk-UA"))" />
+    </MudItem>
+</MudGrid>
+<MudGrid>
+    <MudItem xs="6" md="4">
+        <MudButton
+            Variant="Variant.Filled"
+            Color="Color.Primary"
+            Size="Size.Medium"
+            Class="mt-4"
+            FullWidth="true"
+            StartIcon="@Icons.Material.Filled.Autorenew"
+            OnClick="@(args => LoadDataAsync())">
+            Завантажити дані
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<MudTable
+    @ref="@_mtbWeather"
+    Items="_forecast" 
+    Hover="true" 
+    SortLabel="Sort By" 
+    Elevation="0"
+    Height="calc(100vh - 300px);"
+    AllowUnsorted="false">
+    <HeaderContent>
+        <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<WeatherViewModel, object>(x=>x.Date)">Дата і час</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<WeatherViewModel, object>(x=>x.Temp)">Температура (C)</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<WeatherViewModel, object>(x=>x.Description!)">Опис</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Date">@context.Date.ToString("dd.MM.yyyy HH:mm")</MudTd>
+        <MudTd DataLabel="Temp. (C)">
+            <div style="display: flex;">
+                @context.Temp <img src="@context.ImageBase64" width="50px;"/>
+            </div>
+        </MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+    </RowTemplate>
+</MudTable>
+
+
+
+@code {
+    private MudTable<WeatherViewModel>? _mtbWeather;
+
+    private DateTime _dateFrom = DateTime.Today;
+    private DateTime _dateTo = DateTime.Today.AddDays(5);
+    private List<WeatherViewModel> _forecast = new();
+
+    private bool _showAlert = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    private async Task OnDateFromChanged(DateTime newValue)
+    {
+        _dateFrom = newValue;
+        if (_dateFrom > _dateTo)
+        {
+            _dateFrom = _dateTo;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnDateToChanged(DateTime newValue)
+    {
+        _dateTo = newValue;
+        if (_dateTo < _dateFrom)
+        {
+            _dateTo = _dateFrom;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (_mtbWeather != null)
+        {
+            _mtbWeather.Loading = true;
+        }
+
+        _forecast = await _weatherService.GetForecastWeatherOfPoltavaAsync(_dateFrom, _dateTo);
+
+        if ((_dateTo - _dateFrom).Days > 5)
+        {
+            Snackbar.Add("Для прогнозу більше ніж, на 5 днів потрібе PRO api-key", Severity.Warning);
+        }
+
+        if (_mtbWeather != null)
+        {
+            _mtbWeather.Loading = false;
+        }
+
+        StateHasChanged();
+    }
+
+}

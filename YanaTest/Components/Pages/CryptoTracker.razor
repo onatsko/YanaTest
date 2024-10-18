@@ -1,0 +1,16 @@
+﻿@page "/crypto-tracker"
+
+@inject ISnackbar Snackbar
+
+<PageTitle>CryptoTracker</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">CryptoTracker demo</MudText>
+
+
+@code {
+    
+    protected override async Task OnInitializedAsync()
+    {
+        Snackbar.Add("В розробці", Severity.Info);
+    }
+}
